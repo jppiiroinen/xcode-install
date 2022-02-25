@@ -224,7 +224,7 @@ module XcodeInstall
       all_xcodes.sort_by { |seed| [seed.version, -seed.date_modified] }.reverse
     end
 
-    def install_dmg(dmg_path, suffix = '', switch = true, clean = true)
+    def install_dmg(dmg_path, suffix = '', switch = true, clean = true, should_verify_integrity = true)
       prompt = "Please authenticate for Xcode installation.\nPassword: "
       xcode_path = "/Applications/Xcode#{suffix}.app"
 
@@ -267,8 +267,10 @@ HELP
       xcode = InstalledXcode.new(xcode_path)
 
       unless xcode.verify_integrity
-        `sudo rm -rf #{xcode_path}`
-        return
+        if should_verify_integrity
+          `sudo rm -rf #{xcode_path}`
+          return
+        end
       end
 
       enable_developer_mode
@@ -287,12 +289,12 @@ HELP
     end
 
     # rubocop:disable Metrics/ParameterLists
-    def install_version(version, switch = true, clean = true, install = true, progress = true, url = nil, show_release_notes = true, progress_block = nil, retry_download_count = 3)
+    def install_version(version, switch = true, clean = true, install = true, progress = true, url = nil, show_release_notes = true, progress_block = nil, retry_download_count = 3, should_verify_integrity = true)
       dmg_path = get_dmg(version, progress, url, progress_block, retry_download_count)
       fail Informative, "Failed to download Xcode #{version}." if dmg_path.nil?
 
       if install
-        install_dmg(dmg_path, "-#{version.to_s.split(' ').join('.')}", switch, clean)
+        install_dmg(dmg_path, "-#{version.to_s.split(' ').join('.')}", switch, clean, should_verify_integrity)
       else
         puts "Downloaded Xcode #{version} to '#{dmg_path}'"
       end
@@ -737,13 +739,17 @@ HELP
 
     def verify_app_security_assessment
       puts `/usr/bin/codesign --verify --verbose #{@path}`
-      $?.exitstatus.zero?
+      retval = $?.exitstatus.zero?
+      puts "codesign: #{retval}"
+      retval
     end
 
     def verify_app_cert
       Fastlane::Actions::VerifyXcodeAction.run(xcode_path: @path.to_s)
+      puts "app cert ok"
       true
     rescue
+      puts "app cert failed"
       false
     end
   end

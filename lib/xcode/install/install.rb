@@ -18,6 +18,7 @@ module XcodeInstall
          ['--no-progress', 'Don’t show download progress.'],
          ['--no-clean', 'Don’t delete DMG after installation.'],
          ['--no-show-release-notes', 'Don’t open release notes in browser after installation.'],
+         ['--no-verify-integrity', 'Don´t verify integrity after installation.'],
          ['--retry-download-count', 'Count of retrying download when curl is failed.']].concat(super)
       end
 
@@ -31,6 +32,7 @@ module XcodeInstall
         @should_install = argv.flag?('install', true)
         @should_switch = argv.flag?('switch', true)
         @progress = argv.flag?('progress', true)
+        @should_verify_integrity = argv.flag?('verify-integrity', true)
         @show_release_notes = argv.flag?('show-release-notes', true)
         @retry_download_count = argv.option('retry-download-count', '3')
         super
@@ -51,7 +53,7 @@ module XcodeInstall
 
       def run
         @installer.install_version(@version, @should_switch, @should_clean, @should_install,
-                                   @progress, @url, @show_release_notes, nil, @retry_download_count.to_i)
+                                   @progress, @url, @show_release_notes, nil, @retry_download_count.to_i, @should_verify_integrity)
       end
     end
   end
